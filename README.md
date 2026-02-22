@@ -1,73 +1,123 @@
-# Welcome to your Lovable project
+# اظلال (Adhlal)
 
-## Project info
+A modern marketing and e-commerce website for **اظلال (Adhlal)** — a premium brand for curtains and smart home solutions in the Kingdom of Saudi Arabia.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## About the Project
 
-## How can I edit this code?
+This is the redesigned frontend for Adhlal, offering:
 
-There are several ways of editing your application.
+- **Marketing site**: Hero, products, features, stats, smart home solutions, testimonials, FAQ, and call-to-action sections
+- **Store**: Product catalog and shopping experience
+- **Company info**: About page, contact form, and legal pages (Privacy, Terms)
+- **Dashboard**: Admin area for products and orders management (with login)
+- **RTL-friendly**: Arabic-oriented branding and content (اظلال)
 
-**Use Lovable**
+The app is a single-page application (SPA) with client-side routing and a responsive layout.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Vite** — Build tool and dev server
+- **React 18** — UI library
+- **TypeScript** — Typed JavaScript
+- **React Router DOM** — Client-side routing
+- **Tailwind CSS** — Styling
+- **shadcn/ui** — UI components (Radix-based)
+- **TanStack Query** — Server state / data fetching
+- **Framer Motion** — Animations
+- **Lucide React** — Icons
 
-**Use your preferred IDE**
+## Project Structure
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```
+adhlal-redesigned/
+├── public/                 # Static assets (favicon, robots.txt, etc.)
+├── src/
+│   ├── assets/             # Images and static assets (logo, hero, etc.)
+│   ├── components/
+│   │   ├── ui/             # shadcn/ui primitives (Button, Card, Dialog, etc.)
+│   │   ├── layout/         # Navbar, Footer, Layout
+│   │   ├── home/           # Home page sections (Hero, Products, FAQ, CTA, etc.)
+│   │   └── dashboard/      # Dashboard components (Products, Orders, Notifications)
+│   ├── hooks/              # Custom hooks (toast, theme, mobile)
+│   ├── lib/                # Utilities (e.g. cn, utils)
+│   ├── pages/              # Route-level pages
+│   │   ├── Index.tsx       # Home
+│   │   ├── About.tsx
+│   │   ├── Store.tsx
+│   │   ├── Contact.tsx
+│   │   ├── Privacy.tsx
+│   │   ├── Terms.tsx
+│   │   ├── Login.tsx
+│   │   ├── Dashboard.tsx
+│   │   └── NotFound.tsx
+│   ├── test/               # Vitest setup and tests
+│   ├── App.tsx             # App shell, routing, providers
+│   ├── main.tsx            # Entry point
+│   └── index.css           # Global styles, Tailwind
+├── index.html
+├── vite.config.ts
+├── tailwind.config.ts
+├── tsconfig.json
+└── package.json
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Key Routes
 
-Follow these steps:
+| Path        | Page       | Description                    |
+|------------|------------|--------------------------------|
+| `/`        | Home       | Landing with all home sections |
+| `/about`   | About      | Company information            |
+| `/store`   | Store      | Product catalog                |
+| `/contact` | Contact    | Contact form                   |
+| `/privacy` | Privacy    | Privacy policy                 |
+| `/terms`   | Terms      | Terms of use                   |
+| `/login`   | Login      | Admin login                    |
+| `/dashboard` | Dashboard | Admin (products, orders)       |
+
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** (LTS recommended) and **npm**  
+  - [Install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating) (optional)
+
+### Install and run
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Clone the repository
 git clone <YOUR_GIT_URL>
+cd adhlal-redesigned
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Install dependencies
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server (with HMR)
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at **http://localhost:8080** (or the port shown in the terminal).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Other scripts
 
-**Use GitHub Codespaces**
+| Command           | Description                |
+|-------------------|----------------------------|
+| `npm run build`   | Production build           |
+| `npm run preview` | Preview production build   |
+| `npm run lint`    | Run ESLint                 |
+| `npm run test`    | Run Vitest tests           |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Deployment
 
-## What technologies are used for this project?
+Build the app with:
 
-This project is built with:
+```sh
+npm run build
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The output is in the `dist/` folder. Deploy `dist/` to any static host (e.g. Vercel, Netlify, or your own server). The project includes a `vercel.json` for Vercel deployment.
 
-## How can I deploy this project?
+For client-side routing, ensure the server is configured to serve `index.html` for all routes (SPA fallback).
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## License
 
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Private — Adhlal (اظلال).
