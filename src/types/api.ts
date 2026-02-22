@@ -43,25 +43,53 @@ export interface Category {
   created_at?: string;
 }
 
+export interface ProductColor {
+  name: string;
+  hex: string;
+}
+
 export interface Product {
   id: number;
   name: string;
   slug?: string;
   category_id: number;
   category?: Category;
-  price: string; // e.g. "149.99" or "١٤٩٫٩٩"
+  price: string;
   sale_price?: string | null;
   stock: number;
   status: "available" | "out_of_stock" | "coming_soon" | "discontinued";
   description?: string;
   short_description?: string;
+  long_description?: string;
   image_url?: string | null;
-  gallery?: string[]; // additional images
+  gallery?: string[];
+  colors?: ProductColor[];
+  width?: number;
+  height?: number;
   sku?: string;
   weight?: number;
   dimensions?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface Customer extends User {
+  address?: string;
+  orders_count?: number;
+  total_spent?: string;
+  last_order_at?: string | null;
+  orders?: Order[];
+}
+
+export interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  subject?: string;
+  message: string;
+  status: "new" | "read" | "replied" | "archived";
+  created_at: string;
 }
 
 export interface OrderItem {
@@ -71,8 +99,9 @@ export interface OrderItem {
   product_name: string;
   product_image?: string | null;
   quantity: number;
-  price: string; // unit price at time of order
+  price: string;
   total: string;
+  color?: string;
   created_at?: string;
 }
 
@@ -116,7 +145,7 @@ export interface DashboardStats {
   average_order_value?: string;
   recent_orders: Order[];
   sales_chart: Array<{
-    date: string; // e.g. "2025-02-01" or "Feb 2025"
+    date: string;
     amount: number;
     orders?: number;
   }>;
@@ -128,6 +157,15 @@ export interface DashboardStats {
   }>;
 }
 
+export interface Home {
+  id: number;
+  section: string;
+  content: any;
+  name?: string;
+  image_url?: string;
+  price?: string;
+}
+
 export interface Notification {
   id: number;
   title: string;
@@ -135,10 +173,9 @@ export interface Notification {
   type?: "order" | "customer" | "product" | "system" | "review";
   read_at: string | null;
   created_at: string;
-  data?: Record<string, any>; // e.g. { order_id: 123, product_id: 45 }
+  data?: Record<string, any>;
 }
 
-// Optional: for pagination responses
 export interface PaginatedResponse<T> {
   data: T[];
   current_page: number;
