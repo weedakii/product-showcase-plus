@@ -386,8 +386,8 @@ const Dashboard = () => {
                                   <td className="px-6 py-3 font-medium text-foreground hidden sm:table-cell">{order.total_price}</td>
                                   <td className="px-6 py-3">
                                     <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${
-                                      order.status === "مكتمل" ? "bg-primary/10 text-primary" : order.status === "قيد التنفيذ" ? "bg-accent/10 text-accent" : "bg-secondary text-foreground"
-                                    }`}>{order.status}</span>
+                                      order.status === "delivered" ? "bg-primary/10 text-primary" : order.status === "processing" ? "bg-accent/10 text-accent" : "bg-secondary text-foreground"
+                                    }`}>{order.status === "delivered" ? "مكتمل" : order.status === "processing" ? "قيد التنفيذ" : order.status === "pending" ? "جديد" : order.status}</span>
                                   </td>
                                 </motion.tr>
                               ))

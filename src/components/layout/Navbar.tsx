@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon, ShoppingCart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import logo from "@/assets/adhlal-logo.png";
 import { useTheme } from "@/hooks/use-theme";
+import { useCart } from "@/contexts/CartContext";
 
 const navLinks = [
   { href: "/", label: "الرئيسية" },
@@ -16,6 +17,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { totalItems } = useCart();
 
   return (
     <nav className="fixed top-0 right-0 left-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -53,6 +55,14 @@ const Navbar = () => {
             >
               {theme === "dark" ? <Sun size={18} className="text-accent" /> : <Moon size={18} className="text-muted-foreground" />}
             </motion.button>
+            <Link to="/cart" className="relative p-2.5 rounded-lg hover:bg-muted transition-colors">
+              <ShoppingCart size={20} className="text-foreground/70" />
+              {totalItems > 0 && (
+                <span className="absolute -top-0.5 -left-0.5 w-5 h-5 bg-accent text-accent-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                  {totalItems}
+                </span>
+              )}
+            </Link>
             <Link
               to="/login"
               className="inline-flex items-center px-5 py-2.5 rounded-lg border border-border text-foreground font-medium text-sm hover:bg-muted transition-colors"

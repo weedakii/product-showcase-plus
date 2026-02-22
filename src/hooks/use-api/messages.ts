@@ -1,23 +1,8 @@
-// src/hooks/api/messages.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/api-client";
-import { ApiResponse } from "@/types/api";
+import { ApiResponse, ContactMessage } from "@/types/api";
 
-export interface ContactMessage {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string;
-  subject?: string;
-  message: string;
-  status: "new" | "read" | "replied" | "archived";
-  created_at: string;
-}
-
-export const useAdminMessages = (params?: {
-  status?: string;
-  search?: string;
-}) => {
+export const useAdminMessages = (params?: { status?: string; search?: string }) => {
   return useQuery({
     queryKey: ["admin-messages", params],
     queryFn: async () => {

@@ -1,15 +1,15 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit2, Trash2, X, Search, Loader2, Package, Upload } from "lucide-react";
-import { 
-  useAdminProducts, 
-  useCreateProduct, 
-  useUpdateProduct, 
+import { Plus, Edit2, Trash2, X, Search, Loader2, Package, Upload, Palette } from "lucide-react";
+import {
+  useAdminProducts,
+  useCreateProduct,
+  useUpdateProduct,
   useDeleteProduct,
   useCategories
 } from "@/hooks/use-api";
 import { useToast } from "@/hooks/use-toast";
-import { Product } from "@/types/api";
+import { Product, ProductColor } from "@/types/api";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,6 +21,9 @@ const productSchema = z.object({
   stock: z.number().min(0, "المخزون لا يمكن أن يكون أقل من صفر"),
   status: z.string().min(1, "يرجى اختيار الحالة"),
   description: z.string().optional(),
+  long_description: z.string().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -33,11 +36,17 @@ const ProductsManagement = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [colors, setColors] = useState<ProductColor[]>([]);
+  const [newColorName, setNewColorName] = useState("");
+  const [newColorHex, setNewColorHex] = useState("#000000");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const { data: products, isLoading: productsLoading } = useAdminProducts({ search });
   const { data: categories } = useCategories();
-  
+
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
   const deleteMutation = useDeleteProduct();
@@ -49,7 +58,7 @@ const ProductsManagement = () => {
     formState: { errors },
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
-    defaultValues: { category_id: 1, stock: 0, status: "متوفر" },
+    defaultValues: { category_id: 1, stock: 0, status: "available" },
   });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,6 +69,29 @@ const ProductsManagement = () => {
     }
   };
 
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setGalleryFiles(prev => [...prev, ...files]);
+    setGalleryPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setGalleryFiles(prev => prev.filter((_, i) => i !== index));
+    setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const addColor = () => {
+    if (newColorName.trim()) {
+      setColors(prev => [...prev, { name: newColorName.trim(), hex: newColorHex }]);
+      setNewColorName("");
+      setNewColorHex("#000000");
+    }
+  };
+
+  const removeColor = (index: number) => {
+    setColors(prev => prev.filter((_, i) => i !== index));
+  };
+
   const buildFormData = (data: ProductFormData): FormData => {
     const fd = new FormData();
     fd.append("name", data.name);
@@ -68,7 +100,12 @@ const ProductsManagement = () => {
     fd.append("stock", data.stock.toString());
     fd.append("status", data.status);
     if (data.description) fd.append("description", data.description);
+    if (data.long_description) fd.append("long_description", data.long_description);
+    if (data.width) fd.append("width", data.width.toString());
+    if (data.height) fd.append("height", data.height.toString());
     if (imageFile) fd.append("image_url", imageFile);
+    galleryFiles.forEach((file, i) => fd.append(`gallery[${i}]`, file));
+    if (colors.length > 0) fd.append("colors", JSON.stringify(colors));
     return fd;
   };
 
@@ -83,7 +120,7 @@ const ProductsManagement = () => {
         toast({ title: "تمت الإضافة", description: "تمت إضافة المنتج بنجاح" });
       }
       closeForm();
-    } catch (err) {
+    } catch {
       toast({ variant: "destructive", title: "خطأ", description: "فشل حفظ المنتج" });
     }
   };
@@ -93,7 +130,7 @@ const ProductsManagement = () => {
       await deleteMutation.mutateAsync(id);
       toast({ title: "تم الحذف", description: "تم حذف المنتج بنجاح" });
       setDeleteConfirm(null);
-    } catch (err) {
+    } catch {
       toast({ variant: "destructive", title: "خطأ", description: "فشل حذف المنتج" });
     }
   };
@@ -102,6 +139,9 @@ const ProductsManagement = () => {
     setEditingProduct(product);
     setImageFile(null);
     setImagePreview(product.image_url || null);
+    setGalleryFiles([]);
+    setGalleryPreviews(product.gallery || []);
+    setColors(product.colors || []);
     reset({
       name: product.name,
       category_id: product.category_id,
@@ -109,6 +149,9 @@ const ProductsManagement = () => {
       stock: product.stock,
       status: product.status,
       description: product.description || "",
+      long_description: product.long_description || "",
+      width: product.width || undefined,
+      height: product.height || undefined,
     });
     setIsAdding(false);
   };
@@ -117,13 +160,19 @@ const ProductsManagement = () => {
     setEditingProduct(null);
     setImageFile(null);
     setImagePreview(null);
+    setGalleryFiles([]);
+    setGalleryPreviews([]);
+    setColors([]);
     reset({
       name: "",
       category_id: categories?.[0]?.id || 1,
       price: "",
       stock: 0,
-      status: "متوفر",
+      status: "available",
       description: "",
+      long_description: "",
+      width: undefined,
+      height: undefined,
     });
     setIsAdding(true);
   };
@@ -133,11 +182,21 @@ const ProductsManagement = () => {
     setIsAdding(false);
     setImageFile(null);
     setImagePreview(null);
+    setGalleryFiles([]);
+    setGalleryPreviews([]);
+    setColors([]);
     reset();
   };
 
   const showForm = isAdding || editingProduct;
   const isSaving = createMutation.isPending || updateMutation.isPending;
+
+  const statusLabels: Record<string, string> = {
+    available: "متوفر",
+    out_of_stock: "نفذ",
+    coming_soon: "قريباً",
+    discontinued: "متوقف",
+  };
 
   return (
     <div>
@@ -160,24 +219,27 @@ const ProductsManagement = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-sm p-4" onClick={closeForm}>
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card rounded-xl p-6 w-full max-w-md shadow-lg" onClick={(e) => e.stopPropagation()}>
+              className="bg-card rounded-xl p-6 w-full max-w-2xl shadow-lg" onClick={(e) => e.stopPropagation()}>
               <form onSubmit={handleSubmit(onSave)}>
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-bold text-foreground">{editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}</h3>
                   <button type="button" onClick={closeForm} className="p-1 hover:bg-muted rounded-lg"><X size={18} /></button>
                 </div>
                 <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
+                  {/* Name */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">اسم المنتج</label>
                     <input {...register("name")} className={`w-full px-3 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${errors.name ? "border-destructive" : "border-border"}`} />
                     {errors.name && <p className="text-destructive text-xs mt-1">{errors.name.message}</p>}
                   </div>
+                  {/* Category */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">الفئة</label>
-                    <select {...register("category_id", { valueAsNumber: true })} className={`w-full px-3 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${errors.category_id ? "border-destructive" : "border-border"}`}>
+                    <select {...register("category_id", { valueAsNumber: true })} className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
                       {categories?.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
                     </select>
                   </div>
+                  {/* Price & Stock */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1">السعر</label>
@@ -185,37 +247,90 @@ const ProductsManagement = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1">المخزون</label>
-                      <input type="number" {...register("stock", { valueAsNumber: true })} className={`w-full px-3 py-2.5 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 ${errors.stock ? "border-destructive" : "border-border"}`} />
+                      <input type="number" {...register("stock", { valueAsNumber: true })} className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
                     </div>
                   </div>
+                  {/* Width & Height */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">العرض (سم)</label>
+                      <input type="number" {...register("width", { valueAsNumber: true })} className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">الارتفاع (سم)</label>
+                      <input type="number" {...register("height", { valueAsNumber: true })} className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    </div>
+                  </div>
+                  {/* Status */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">الحالة</label>
                     <select {...register("status")} className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
-                      <option value="متوفر">متوفر</option>
-                      <option value="محدود">محدود</option>
-                      <option value="نفذ">نفذ</option>
+                      <option value="available">متوفر</option>
+                      <option value="out_of_stock">نفذ</option>
+                      <option value="coming_soon">قريباً</option>
+                      <option value="discontinued">متوقف</option>
                     </select>
                   </div>
+                  {/* Main Image */}
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">صورة المنتج</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">صورة المنتج الرئيسية</label>
                     <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full border-2 border-dashed border-border rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
-                    >
+                    <div onClick={() => fileInputRef.current?.click()}
+                      className="w-full border-2 border-dashed border-border rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
                       {imagePreview ? (
                         <img src={imagePreview} alt="معاينة" className="w-20 h-20 object-cover rounded-lg mb-2" />
                       ) : (
                         <Upload size={24} className="text-muted-foreground mb-2" />
                       )}
-                      <span className="text-sm text-muted-foreground">
-                        {imageFile ? imageFile.name : "اضغط لاختيار صورة"}
-                      </span>
+                      <span className="text-sm text-muted-foreground">{imageFile ? imageFile.name : "اضغط لاختيار صورة"}</span>
                     </div>
                   </div>
+                  {/* Gallery */}
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">الوصف</label>
+                    <label className="block text-sm font-medium text-foreground mb-1">معرض الصور</label>
+                    <input ref={galleryInputRef} type="file" accept="image/*" multiple onChange={handleGalleryChange} className="hidden" />
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {galleryPreviews.map((preview, i) => (
+                        <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-border">
+                          <img src={preview} alt="" className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => removeGalleryImage(i)}
+                            className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" onClick={() => galleryInputRef.current?.click()}
+                      className="text-sm text-primary hover:underline">+ إضافة صور</button>
+                  </div>
+                  {/* Colors */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1 flex items-center gap-1">
+                      <Palette size={14} /> الألوان المتاحة
+                    </label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {colors.map((color, i) => (
+                        <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-foreground border border-border">
+                          <span className="w-3 h-3 rounded-full border border-border" style={{ backgroundColor: color.hex }} />
+                          {color.name}
+                          <button type="button" onClick={() => removeColor(i)} className="text-destructive hover:text-destructive/80">×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input type="color" value={newColorHex} onChange={(e) => setNewColorHex(e.target.value)} className="w-8 h-8 rounded border border-border cursor-pointer" />
+                      <input type="text" value={newColorName} onChange={(e) => setNewColorName(e.target.value)} placeholder="اسم اللون"
+                        className="flex-1 px-3 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                      <button type="button" onClick={addColor} className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm">إضافة</button>
+                    </div>
+                  </div>
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">الوصف القصير</label>
                     <textarea {...register("description")} className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 h-20" />
+                  </div>
+                  {/* Long Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">الوصف التفصيلي</label>
+                    <textarea {...register("long_description")} className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 h-32" />
                   </div>
                 </div>
                 <div className="flex gap-3 mt-6">
@@ -266,6 +381,7 @@ const ProductsManagement = () => {
                   <th className="text-right px-6 py-3 text-muted-foreground font-medium hidden sm:table-cell">الفئة</th>
                   <th className="text-right px-6 py-3 text-muted-foreground font-medium">السعر</th>
                   <th className="text-right px-6 py-3 text-muted-foreground font-medium hidden md:table-cell">المخزون</th>
+                  <th className="text-right px-6 py-3 text-muted-foreground font-medium hidden md:table-cell">الألوان</th>
                   <th className="text-right px-6 py-3 text-muted-foreground font-medium">الحالة</th>
                   <th className="text-right px-6 py-3 text-muted-foreground font-medium">إجراءات</th>
                 </tr>
@@ -284,10 +400,18 @@ const ProductsManagement = () => {
                     <td className="px-6 py-3 text-muted-foreground hidden sm:table-cell">{product.category?.name || "عام"}</td>
                     <td className="px-6 py-3 font-medium text-foreground">{product.price}</td>
                     <td className="px-6 py-3 text-foreground hidden md:table-cell">{product.stock}</td>
+                    <td className="px-6 py-3 hidden md:table-cell">
+                      <div className="flex gap-1">
+                        {product.colors?.slice(0, 4).map((c, i) => (
+                          <span key={i} className="w-4 h-4 rounded-full border border-border" style={{ backgroundColor: c.hex }} title={c.name} />
+                        ))}
+                        {(product.colors?.length ?? 0) > 4 && <span className="text-xs text-muted-foreground">+{(product.colors?.length ?? 0) - 4}</span>}
+                      </div>
+                    </td>
                     <td className="px-6 py-3">
                       <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${
-                        product.status === "متوفر" ? "bg-primary/10 text-primary" : product.status === "محدود" ? "bg-accent/10 text-accent" : "bg-destructive/10 text-destructive"
-                      }`}>{product.status}</span>
+                        product.status === "available" ? "bg-primary/10 text-primary" : product.status === "out_of_stock" ? "bg-destructive/10 text-destructive" : "bg-accent/10 text-accent"
+                      }`}>{statusLabels[product.status] || product.status}</span>
                     </td>
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
@@ -302,7 +426,7 @@ const ProductsManagement = () => {
                   </motion.tr>
                 ))}
                 {(!products || products.length === 0) && (
-                  <tr><td colSpan={6} className="text-center py-20 text-muted-foreground">
+                  <tr><td colSpan={7} className="text-center py-20 text-muted-foreground">
                     <Package className="mx-auto mb-3 opacity-20" size={48} />
                     لا توجد منتجات متوفرة
                   </td></tr>
